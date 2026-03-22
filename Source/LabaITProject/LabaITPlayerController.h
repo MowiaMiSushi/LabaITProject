@@ -33,4 +33,8 @@ protected:
 	/** Tworzy widget życia/staminy i dodaje go do ekranu. Wywoływane automatycznie w BeginPlay. */
 	UFUNCTION(BlueprintCallable, Category = "HUD")
 	void ShowHealthStaminaHUD();
+
+	/** Pełny tryb gry: ukryty kursor, Game Only, fokus na viewport (np. po UI portalu lub po przejściu poziomu). */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	void RestoreGameOnlyInput();
 };

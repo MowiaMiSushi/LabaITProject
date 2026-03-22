@@ -8,6 +8,7 @@
 #include "GameFramework/PlayerStart.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "TimerManager.h"
 
 APortal::APortal()
 {
@@ -89,7 +90,23 @@ void APortal::ConfirmTravel()
 			FRotator Rot = Found[0]->GetActorRotation();
 			GetWorld()->GetFirstPlayerController()->GetPawn()->SetActorLocationAndRotation(Loc, Rot);
 		}
+		RestoreGameInputAfterPortalTravel();
 		return;
+	}
+
+	// Ważne: OpenLevel przerywa łańcuch Blueprintu – „RemoveFromParent” po ConfirmTravel często się nie wykona.
+	// Przed podróżą zdejmij stan UI (kursor + tryb), żeby nowy poziom nie startował „jak pod UI”.
+	if (ALabaITPlayerController* LabaPC = Cast<ALabaITPlayerController>(GetWorld()->GetFirstPlayerController()))
+	{
+		LabaPC->RestoreGameOnlyInput();
+	}
+	else if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+	{
+		PC->SetShowMouseCursor(false);
+		FInputModeGameOnly InputMode;
+		InputMode.SetConsumeCaptureMouseDown(true);
+		PC->SetInputMode(InputMode);
+		PC->FlushPressedKeys();
 	}
 
 	ULabaITGameInstance* GI = Cast<ULabaITGameInstance>(GetGameInstance());
@@ -127,13 +144,33 @@ void APortal::TryTeleportPlayerToThisPortal()
 		PlayerPawn->SetActorLocationAndRotation(GetActorLocation(), GetActorRotation());
 	}
 
-	// Po załadowaniu poziomu wymuś tryb gry i ukryj kursor (żeby dało się ruszać)
-	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+	// Od razu + z opóźnieniem – przy starcie poziomu pierwsze wywołanie bywa za wcześnie (poziom jeszcze nie „posiada” postaci)
+	RestoreGameInputAfterPortalTravel();
+	if (UWorld* World = GetWorld())
 	{
-		PC->SetShowMouseCursor(false);
-		FInputModeGameOnly InputMode;
-		PC->SetInputMode(InputMode);
+		World->GetTimerManager().SetTimer(RestoreInputTimerHandle, this, &APortal::RestoreGameInputAfterPortalTravel, 0.15f, false);
+		World->GetTimerManager().SetTimer(RestoreInputTimerHandle2, this, &APortal::RestoreGameInputAfterPortalTravel, 0.5f, false);
 	}
 
 	GI->PendingTeleportPortalTag = NAME_None;
+}
+
+void APortal::RestoreGameInputAfterPortalTravel()
+{
+	if (!GetWorld()) return;
+
+	if (ALabaITPlayerController* LabaPC = Cast<ALabaITPlayerController>(GetWorld()->GetFirstPlayerController()))
+	{
+		LabaPC->RestoreGameOnlyInput();
+	}
+	else if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+	{
+		PC->SetShowMouseCursor(false);
+		PC->SetIgnoreMoveInput(false);
+		PC->SetIgnoreLookInput(false);
+		FInputModeGameOnly InputMode;
+		InputMode.SetConsumeCaptureMouseDown(true);
+		PC->SetInputMode(InputMode);
+		PC->FlushPressedKeys();
+	}
 }

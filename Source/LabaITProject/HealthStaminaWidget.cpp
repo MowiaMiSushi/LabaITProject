@@ -8,6 +8,7 @@
 void UHealthStaminaWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	SetIsFocusable(false);
 	FindPlayerHealthStamina();
 }
 

@@ -57,6 +57,12 @@ protected:
 
 	void TryTeleportPlayerToThisPortal();
 
+	/** Ponownie ustawia tryb gry i kursor – wywoływane z opóźnieniem po załadowaniu poziomu. */
+	void RestoreGameInputAfterPortalTravel();
+
 private:
 	bool bTriggeredThisOverlap = false;
+
+	FTimerHandle RestoreInputTimerHandle;
+	FTimerHandle RestoreInputTimerHandle2;
 };
