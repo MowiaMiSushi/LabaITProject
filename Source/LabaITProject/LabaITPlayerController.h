@@ -7,6 +7,7 @@
 #include "LabaITPlayerController.generated.h"
 
 class UHealthStaminaWidget;
+class UUserWidget;
 class APortal;
 
 UCLASS()
@@ -27,6 +28,24 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Portal")
 	void OnPortalTriggered(APortal* Portal);
 
+	/** Pełny tryb gry: ukryty kursor, Game Only, fokus na viewport (np. po UI portalu lub po przejściu poziomu). */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	void RestoreGameOnlyInput();
+
+	// --- Pauza (WBP_PauseMenu) ---
+
+	/** Klasa menu pauzy (np. WBP_PauseMenu). Ustaw w Class Defaults Blueprintu kontrolera (kategoria Pause). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Pause", meta = (DisplayName = "Pause Menu Widget Class"))
+	TSubclassOf<UUserWidget> PauseMenuWidgetClass;
+
+	/** Otwiera menu (pauza, kursor, UI) albo zamyka, jeśli już jest otwarte. Podłącz klawisz P w BP do tej funkcji. */
+	UFUNCTION(BlueprintCallable, Category = "Pause")
+	void TogglePauseMenu();
+
+	/** Zamyka menu pauzy, odpauzowuje, przywraca grę. Przycisk „Wróć” w WBP: Get Owning Player → Close Pause Menu. */
+	UFUNCTION(BlueprintCallable, Category = "Pause")
+	void ClosePauseMenu();
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -34,7 +53,11 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "HUD")
 	void ShowHealthStaminaHUD();
 
-	/** Pełny tryb gry: ukryty kursor, Game Only, fokus na viewport (np. po UI portalu lub po przejściu poziomu). */
-	UFUNCTION(BlueprintCallable, Category = "Input")
-	void RestoreGameOnlyInput();
+private:
+	void TryApplyPendingSaveLoadFromGameInstance();
+
+	void OpenPauseMenuInternal();
+
+	UPROPERTY(Transient)
+	TObjectPtr<UUserWidget> PauseMenuWidgetInstance;
 };
